@@ -24,12 +24,20 @@ package object streaming {
       * @param batchSize                   number of rows to write to BigQuery at once
       *                                    (default: 500)
       * @param isPartitionedByDay          Partition table by day
-      *                                    (default: 500)
+      *                                    (default: false)
+      * @param partitionExpirationMs       Number of milliseconds for which to keep the storage for a partition,
+      *                                    or <code>null</code> to disable expiration at all.
+      *                                    (default: null)
       */
-    def bigQueryTable(fullyQualifiedOutputTableId: String, batchSize: Int = 500, isPartitionedByDay: Boolean = false): Unit = {
-      val bigQueryWriter = new BigQueryStreamWriter(fullyQualifiedOutputTableId, batchSize, isPartitionedByDay)
-      writer.foreach(bigQueryWriter)
-        .start
+    def bigQueryTable(fullyQualifiedOutputTableId: String,
+                      batchSize: Int = 500,
+                      isPartitionedByDay: Boolean = false,
+                      partitionExpirationMs: Long = null): Unit = {
+
+      val bigQueryWriter = new BigQueryStreamWriter(fullyQualifiedOutputTableId, batchSize, isPartitionedByDay,
+        partitionExpirationMs)
+
+      writer.foreach(bigQueryWriter).start
     }
   }
 

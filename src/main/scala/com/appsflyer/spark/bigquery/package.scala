@@ -1,4 +1,5 @@
 package com.appsflyer.spark
+
 import com.appsflyer.spark.bigquery.streaming._
 import com.google.api.services.bigquery.model.{TableReference}
 import com.google.cloud.hadoop.io.bigquery.{BigQueryConfiguration, BigQueryOutputFormat}
@@ -52,7 +53,7 @@ package object bigquery {
       * Set GCS bucket for temporary BigQuery files.
       */
     def setBigQueryGcsBucket(gcsBucket: String): Unit =
-    hadoopConf.set(BigQueryConfiguration.GCS_BUCKET_KEY, gcsBucket)
+      hadoopConf.set(BigQueryConfiguration.GCS_BUCKET_KEY, gcsBucket)
 
     /**
       * Set BigQuery dataset location, e.g. US, EU.
@@ -110,16 +111,19 @@ package object bigquery {
       *
       * @param fullyQualifiedOutputTableId output-table id of the form
       *                                    [optional projectId]:[datasetId].[tableId]
-      * @param isPartitionedByDay partion the table by day
+      * @param isPartitionedByDay          partion the table by day
+      * @param partitionExpirationMs       Number of milliseconds for which to keep the storage for a partition,
+      *                                    or <code>null</code> to disable expiration at all.
       */
     def saveAsBigQueryTable(fullyQualifiedOutputTableId: String,
                             isPartitionedByDay: Boolean = false,
+                            partitionExpirationMs: Long = null,
                             writeDisposition: WriteDisposition.Value = null,
                             createDisposition: CreateDisposition.Value = null): Unit = {
 
       val destinationTable = BigQueryStrings.parseTableReference(fullyQualifiedOutputTableId)
       val bigQuerySchema = BigQuerySchema(adaptedDf)
-      val gcsPath = writeDFToGoogleStorage(adaptedDf,destinationTable,bigQuerySchema)
+      val gcsPath = writeDFToGoogleStorage(adaptedDf, destinationTable, bigQuerySchema)
       bq.load(destinationTable,
         bigQuerySchema,
         gcsPath,
@@ -157,6 +161,7 @@ package object bigquery {
       val fs = FileSystem.get(path.toUri, hadoopConf)
       fs.delete(path, true)
     }
+
     /**
       * Save DataFrame data into BigQuery table using streaming API
       *
@@ -173,4 +178,5 @@ package object bigquery {
         .bigQueryTable(fullyQualifiedOutputTableId)
     }
   }
+
 }

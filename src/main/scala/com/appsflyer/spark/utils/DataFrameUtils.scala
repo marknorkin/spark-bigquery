@@ -45,7 +45,7 @@ object DataFrameUtils {
           } else {
             Some(col)
           }
-        case other => Some(col)
+        case _ => Some(col)
       }
     }
   }

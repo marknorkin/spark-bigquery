@@ -19,18 +19,24 @@ import scala.util.control.NonFatal
   *
   * @param fullyQualifiedOutputTableId output-table id of the form
   *                                    [optional projectId]:[datasetId].[tableId]
-  * @param batchSize                   number of rows to write to BigQuery at once
+  * @param batchSize                   Number of rows to write to BigQuery at once
+  * @param isPartitionedByDay          Whether to create a time-partitioned table
+  * @param partitionExpirationMs       Number of milliseconds for which to keep the storage for a partition,
+  *                                    or <code>null</code> to disable expiration at all.
   */
-class BigQueryStreamWriter(fullyQualifiedOutputTableId: String, batchSize: Int,
-                           isPartitionedByDay: Boolean = false) extends ForeachWriter[String] {
+class BigQueryStreamWriter(fullyQualifiedOutputTableId: String,
+                           batchSize: Int,
+                           isPartitionedByDay: Boolean = false,
+                           partitionExpirationMs: Long = null) extends ForeachWriter[String] {
 
   @transient
-  lazy val targetTable: TableReference = BigQueryStrings.parseTableReference(fullyQualifiedOutputTableId)
   private val logger: Logger = LoggerFactory.getLogger(classOf[BigQueryStreamWriter])
 
   @transient
+  lazy val targetTable: TableReference = BigQueryStrings.parseTableReference(fullyQualifiedOutputTableId)
+
+  @transient
   var batchId: Long = 0
-  val DEFAULT_TABLE_EXPIRATION_MS = 259200000L
 
   @transient
   var bqService: Bigquery = null
@@ -55,7 +61,7 @@ class BigQueryStreamWriter(fullyQualifiedOutputTableId: String, batchSize: Int,
   }
 
   override def process(value: String): Unit = {
-    if(isPartitionedByDay) {
+    if (isPartitionedByDay) {
       BigQueryPartitionUtils.createBigQueryPartitionedTable(targetTable)
     }
     if (rowIndex < batchSize) {
